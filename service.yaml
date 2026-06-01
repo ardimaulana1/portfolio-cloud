@@ -1,0 +1,33 @@
+# Optional: declarative Cloud Run service definition (alternative to CLI flags).
+# Apply with:
+#   gcloud run services replace service.yaml --region=asia-southeast2
+#
+# This documents the SCALING configuration explicitly.
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: portfolio-cloud
+  labels:
+    app: portfolio-cloud
+spec:
+  template:
+    metadata:
+      annotations:
+        # ---- Autoscaling configuration ----
+        autoscaling.knative.dev/minScale: "0" # scale to zero when idle (hemat biaya)
+        autoscaling.knative.dev/maxScale: "10" # batas atas instance saat traffic tinggi
+        run.googleapis.com/cpu-throttling: "true"
+    spec:
+      containerConcurrency: 80 # request bersamaan per instance sebelum scale-out
+      timeoutSeconds: 300
+      containers:
+        - image: IMAGE_URL # diisi otomatis oleh `gcloud run deploy --source .`
+          ports:
+            - containerPort: 8080
+          resources:
+            limits:
+              cpu: "1"
+              memory: 512Mi
+  traffic:
+    - percent: 100
+      latestRevision: true
